@@ -12,8 +12,22 @@ public class StartersChapter2 {
     private Throwable error = null;
 
     public void observe(Observable<?> observable) {
-        //TODO
-        throw new UnsupportedOperationException();
+        observable.subscribe(
+                this::onEvent,
+                this::onError,
+                this::onCompleted);
+    }
+
+    private void onEvent(Object o) {
+        this.nbOfEvents++;
+    }
+
+    private void onError(Throwable throwable) {
+        this.error = throwable;
+    }
+
+    private void onCompleted() {
+        this.completed = true;
     }
 
     public int getNbOfEvents() {
@@ -51,8 +65,7 @@ public class StartersChapter2 {
     /**
      * Returns an Observable that emits a sequence of Integers within a specified range.
      *
-     * @throws IllegalArgumentException
-     *             if {@code count} is less than zero
+     * @throws IllegalArgumentException if {@code count} is less than zero
      */
     public static Observable<Integer> range(int start, int count) {        //TODO
         //TODO

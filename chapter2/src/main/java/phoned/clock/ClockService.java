@@ -2,11 +2,13 @@ package phoned.clock;
 
 import rx.Observable;
 import rx.Subscriber;
+import rx.subscriptions.Subscriptions;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static java.lang.Thread.sleep;
 
@@ -28,8 +30,10 @@ public class ClockService {
     }
 
     public Observable<LocalDateTime> getTime() {
-        return Observable.create(subscriber ->
-                executorService.submit(() -> notifySubscriberEveryInterval(subscriber)));
+        return Observable.create(subscriber -> {
+            Future<?> submit = executorService.submit(() -> notifySubscriberEveryInterval(subscriber));
+            subscriber.add(Subscriptions.create(() -> submit.cancel(true)));
+        });
     }
 
     private void notifySubscriberEveryInterval(Subscriber<? super LocalDateTime> subscriber) {

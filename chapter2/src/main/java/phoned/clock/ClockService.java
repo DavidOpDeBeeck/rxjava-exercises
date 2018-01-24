@@ -38,7 +38,7 @@ public class ClockService {
                 notifySubscriber(subscriber);
                 sleep(tickInterval);
             }
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             subscriber.onError(e);
         }
     }

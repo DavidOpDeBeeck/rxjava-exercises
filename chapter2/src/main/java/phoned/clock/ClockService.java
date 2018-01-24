@@ -2,13 +2,11 @@ package phoned.clock;
 
 import rx.Observable;
 import rx.Subscriber;
-import rx.subscriptions.Subscriptions;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static java.lang.Thread.sleep;
 
@@ -16,9 +14,11 @@ public class ClockService {
 
     private static final int THREADS = 1;
 
-    private Clock clock;
-    private int tickInterval;
-    private ExecutorService executorService;
+    private final Clock clock;
+    private final int tickInterval;
+    private final ExecutorService executorService;
+
+    private Observable<LocalDateTime> currentTime;
 
     public ClockService(Clock clock, int tickInterval) {
         this.clock = clock;
@@ -27,21 +27,25 @@ public class ClockService {
     }
 
     public void init() {
+        this.currentTime = Observable.<LocalDateTime>create(subscriber ->
+                executorService.submit(() -> notifySubscriberEveryInterval(subscriber)))
+                .share();
     }
 
     public Observable<LocalDateTime> getTime() {
-        return Observable.create(subscriber -> {
-            Future<?> submit = executorService.submit(() -> notifySubscriberEveryInterval(subscriber));
-            subscriber.add(Subscriptions.create(() -> submit.cancel(true)));
-        });
+        return currentTime;
     }
 
     private void notifySubscriberEveryInterval(Subscriber<? super LocalDateTime> subscriber) {
+        while (!subscriber.isUnsubscribed()) {
+            notifySubscriberAndSleep(subscriber);
+        }
+    }
+
+    private void notifySubscriberAndSleep(Subscriber<? super LocalDateTime> subscriber) {
         try {
-            while (true) {
-                notifySubscriber(subscriber);
-                sleep(tickInterval);
-            }
+            notifySubscriber(subscriber);
+            sleep(tickInterval);
         } catch (Exception e) {
             subscriber.onError(e);
         }
